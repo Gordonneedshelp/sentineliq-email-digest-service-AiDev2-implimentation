@@ -22,8 +22,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: emaildigest.project@gmail.com
-    password: zdzk bpaz wzfw rkvs
+    username: ${EMAIL}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
