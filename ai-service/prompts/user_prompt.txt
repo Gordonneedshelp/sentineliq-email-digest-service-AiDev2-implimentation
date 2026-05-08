@@ -1,0 +1,4 @@
+Please analyze the following email content and extract the summary and action items.
+
+EMAIL CONTENT:
+{email_content}

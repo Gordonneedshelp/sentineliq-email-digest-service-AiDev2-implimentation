@@ -6,6 +6,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import groq 
+import json
 
 # Importing services we just made 
 from services.groq_client import GroqClient
@@ -41,18 +42,34 @@ def generate_report():
     if not data or 'prompt' not in data :
         return jsonify({"error": "Missing prompt in request"}), 400
     
-    raw_prompt = data['prompt']
+    email_content = data['prompt']
 
     #We take raw prompt and santizier it using the functions we just made in services folder 
 
-    sanitized_prompt = sanitize_input(raw_prompt)
+    email_content = sanitize_input(email_content)
 
-    if detect_prompt_injection(sanitized_prompt):
+    if detect_prompt_injection(email_content):
         return jsonify({"error": " Security Risk - Potential prompt injection detected."}), 400
 
     try:
-        result = groq_client.generate(sanitized_prompt)
-        return jsonify({"result": result})
+        # Generate raw response from Groq
+        ai_response_raw = groq_client.generate(email_content)
+        
+        if ai_response_raw is None:
+            return jsonify({"is_fallback": True, "error": "Groq API failed after retries"}), 200
+
+        # Parse the stringified JSON from AI into a Python dictionary
+        try:
+            parsed_result = json.loads(ai_response_raw)
+            return jsonify({"result": parsed_result})
+        except (json.JSONDecodeError, TypeError):
+            # Fallback if AI returns invalid JSON
+            return jsonify({
+                "result": ai_response_raw,
+                "warning": "AI returned non-JSON content",
+                "is_hallucination": True
+            })
+
     except Exception as e:
         return jsonify({"is_fallback": True, "error": str(e)}), 200
 
